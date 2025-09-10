@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bike Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* Modal backdrop styles */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-extrabold text-gray-900 mb-4">Bike Dashboard</h1>
+            <p class="text-xl text-gray-600">Explore the pros, cons, and features of various popular bikes.</p>
+        </header>
+
+        <!-- Search and Filter Section -->
+        <div class="bg-white p-6 rounded-3xl shadow-lg mb-8">
+            <input type="text" id="search-input" placeholder="Search for a bike..." class="w-full p-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+        </div>
+
+        <!-- Bike Cards Container -->
+        <div id="bike-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Bike cards will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <!-- Modal for AI Deep Dive -->
+    <div id="deep-dive-modal" class="hidden modal-backdrop">
+        <div class="bg-white p-8 rounded-3xl shadow-xl max-w-2xl w-full m-4 relative max-h-[90vh] overflow-y-auto">
+            <h2 id="modal-title" class="text-3xl font-bold text-gray-900 mb-4"></h2>
+            <p id="modal-content" class="text-gray-700 leading-relaxed whitespace-pre-wrap"></p>
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div id="modal-loader" class="hidden absolute top-0 left-0 w-full h-full bg-white bg-opacity-80 flex justify-center items-center rounded-3xl">
+                <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 border-4 border-blue-500 border-dotted rounded-full animate-spin mb-2"></div>
+                    <p class="text-lg text-blue-600 font-semibold">Generating AI Deep Dive...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Array of bike data
+        const bikes = [
+            {
+                name: 'Trek Domane',
+                image: 'https://placehold.co/400x300/4c4c4c/ffffff?text=Trek+Domane',
+                pros: ['Exceptional ride comfort', 'Versatile for both road and light gravel', 'Integrated storage'],
+                cons: ['Heavier than some race-oriented road bikes', 'Premium price point'],
+                info: 'The Trek Domane is an endurance road bike designed for comfort on long rides. Its IsoSpeed decouplers absorb road vibrations, making it a popular choice for cyclists who prioritize comfort.',
+                manufacturer: 'Trek'
+            },
+            {
+                name: 'Specialized Stumpjumper',
+                image: 'https://placehold.co/400x300/4c4c4c/ffffff?text=Specialized+Stumpjumper',
+                pros: ['Versatile trail bike', 'Excellent suspension system', 'Lightweight for its category'],
+                cons: ['Can be expensive', 'Limited gear options on some models'],
+                info: 'The Specialized Stumpjumper is a legendary full-suspension mountain bike known for its all-around trail performance. It excels on a variety of terrains, from technical climbs to fast descents.',
+                manufacturer: 'Specialized'
+            },
+            {
+                name: 'Rad Power Bikes RadCity Step-Thru 3',
+                image: 'https://placehold.co/400x300/4c4c4c/ffffff?text=Rad+Power+Bikes',
+                pros: ['Powerful motor and long-range battery', 'Affordable price for an e-bike', 'Comfortable for commuting'],
+                cons: ['Heavy to lift and transport', 'Can be bulky for tight spaces'],
+                info: 'This e-bike from Rad Power Bikes is a popular commuter choice. It offers pedal-assist and throttle functionality, making it easy to get around town without breaking a sweat.',
+                manufacturer: 'Rad Power Bikes'
+            },
+            {
+                name: 'Cannondale Topstone',
+                image: 'https://placehold.co/400x300/4c4c4c/ffffff?text=Cannondale+Topstone',
+                pros: ['Great for gravel and touring', 'Comfortable with Kingpin suspension', 'Plenty of mounting points'],
+                cons: ['Higher-end models are pricey', 'Less aggressive geometry than a pure road bike'],
+                info: 'The Cannondale Topstone is a versatile gravel bike built for adventure. Its unique Kingpin suspension provides a smooth ride on rough terrain, making it a go-to for off-road excursions.',
+                manufacturer: 'Cannondale'
+            },
+            {
+                name: 'Giant Defy',
+                image: 'https://placehold.co/400x300/4c4c4c/ffffff?text=Giant+Defy',
+                pros: ['Lightweight and efficient', 'Great value for the money', 'Comfort-focused endurance geometry'],
+                cons: ['Stock wheels can be heavy', 'Some riders may prefer a stiffer frame'],
+                info: 'The Giant Defy is a well-regarded endurance road bike that offers a comfortable and stable ride. It is a fantastic option for cyclists looking to cover long distances without sacrificing performance.',
+                manufacturer: 'Giant'
+            },
+            {
+                name: 'Surly Ogre',
+                image: 'https://placehold.co/400x300/4c4c4c/ffffff?text=Surly+Ogre',
+                pros: ['Built for durability and bikepacking', 'Extremely versatile frame', 'Can run a variety of wheel and tire sizes'],
+                cons: ['Heavy frame', 'Not as fast as a dedicated road bike'],
+                info: 'The Surly Ogre is a robust and highly versatile touring and mountain bike. It is built to carry heavy loads and withstand the rigors of long-distance, off-road touring.',
+                manufacturer: 'Surly'
+            },
+        ];
+
+        const bikeContainer = document.getElementById('bike-container');
+        const searchInput = document.getElementById('search-input');
+        const modal = document.getElementById('deep-dive-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+        const modalLoader = document.getElementById('modal-loader');
+
+        // Function to create and append a bike card to the container
+        function createBikeCard(bike) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-3xl shadow-lg overflow-hidden transition-transform transform hover:scale-105 duration-300 ease-in-out';
+
+            card.innerHTML = `
+                <img src="${bike.image}" alt="${bike.name}" class="w-full h-48 object-cover">
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">${bike.name}</h2>
+                    <p class="text-sm font-semibold text-blue-600 mb-4">${bike.manufacturer}</p>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-semibold text-gray-700">Pros:</h3>
+                            <ul class="list-disc list-inside text-green-600">
+                                ${bike.pros.map(pro => `<li>${pro}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-700">Cons:</h3>
+                            <ul class="list-disc list-inside text-red-600">
+                                ${bike.cons.map(con => `<li>${con}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-700">Information:</h3>
+                            <p class="text-gray-600 mt-2">${bike.info}</p>
+                        </div>
+                        <button onclick="getDeepDive('${bike.name}')" class="w-full mt-4 bg-blue-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-blue-600 transition-colors duration-300">
+                            ✨ Get AI Deep Dive ✨
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            bikeContainer.appendChild(card);
+        }
+
+        // Function to render bikes based on the search query
+        function renderBikes(query = '') {
+            bikeContainer.innerHTML = '';
+            const filteredBikes = bikes.filter(bike =>
+                bike.name.toLowerCase().includes(query.toLowerCase()) ||
+                bike.manufacturer.toLowerCase().includes(query.toLowerCase())
+            );
+
+            if (filteredBikes.length === 0) {
+                bikeContainer.innerHTML = '<p class="text-center text-gray-500 text-lg col-span-full">No bikes found matching your search.</p>';
+            } else {
+                filteredBikes.forEach(createBikeCard);
+            }
+        }
+
+        // --- Gemini API Integration ---
+
+        async function getDeepDive(bikeName) {
+            modal.classList.remove('hidden');
+            modalLoader.classList.remove('hidden');
+            modalTitle.textContent = `Deep Dive: ${bikeName}`;
+            modalContent.textContent = '';
+            
+            const systemPrompt = "Act as a world-class cycling journalist and write a detailed, insightful analysis of the requested bike. Cover its performance, design, key components, and how it compares to its main competitors. Use a knowledgeable and engaging tone.";
+            const userQuery = `Write a deep dive on the ${bikeName}.`;
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            // Construct the payload
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+
+            try {
+                let response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate content. Please try again.";
+                modalContent.textContent = text;
+            } catch (error) {
+                console.error("Error generating deep dive:", error);
+                modalContent.textContent = "An error occurred while fetching the deep dive. Please try again later.";
+            } finally {
+                modalLoader.classList.add('hidden');
+            }
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+        }
+
+        async function fetchWithExponentialBackoff(url, options, retries = 5, delay = 1000) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response;
+            } catch (error) {
+                if (retries > 0) {
+                    await new Promise(res => setTimeout(res, delay));
+                    return fetchWithExponentialBackoff(url, options, retries - 1, delay * 2);
+                } else {
+                    throw error;
+                }
+            }
+        }
+        
+        // --- Event Listeners and Initial Render ---
+
+        // Initial render on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderBikes();
+        });
+
+        // Event listener for search input
+        searchInput.addEventListener('input', (event) => {
+            renderBikes(event.target.value);
+        });
+    </script>
+</body>
+</html>
